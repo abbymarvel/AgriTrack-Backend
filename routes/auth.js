@@ -16,6 +16,72 @@ const connection = await mysql.createConnection({
     database: process.env.DB,
 });
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication API
+ * /auth/signup:
+ *   post:
+ *     summary: Register user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: User's name
+ *                 example: Alexander K. Dewdney
+ *               email:
+ *                 type: string
+ *                 description: User's email address
+ *                 example: alexander.dewdney@gmail.com
+ *               password:
+ *                 type: string
+ *                 description: User's password
+ *                 example: Password
+ *               role:
+ *                 type: string
+ *                 description: User's role
+ *                 example: Business Owner
+ *     responses:
+ *       '200':
+ *         description: Registration success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for authentication
+ *       '401':
+ *         description: User already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: User already exists.
+ *       '500':
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
+ */
 route.post('/signup', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -40,13 +106,71 @@ route.post('/signup', async (req, res) => {
 
         req.session.userid = user.id;
 
-        res.status(200).json({ token, role: user.role });
+        res.status(200).json({ token });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: User's email address
+ *                 example: alexander.dewdney@gmail.com
+ *               password:
+ *                 type: string
+ *                 description: User's password
+ *                 example: Password
+ *     responses:
+ *       '200':
+ *         description: Login success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for authentication
+ *                 role:
+ *                   type: string
+ *                   description: User's role
+ *       '401':
+ *         description: User credentials invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: User credentials invalid.
+ *       '500':
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
+ */
 route.post('/login', async (req, res) => {
     try {
         const email = req.body.email;
@@ -81,6 +205,21 @@ route.post('/login', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /auth/logout:
+ *   get:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Used logged out successfully
+ *       404:
+ *         description: User not logged in
+ *       501:
+ *         description: Internal Server Error
+ *              
+ */
 route.get('/logout', (req, res) => {
     req.session.userid = null;
     req.session.destroy();
