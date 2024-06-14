@@ -10,6 +10,7 @@ import swaggerUI from "swagger-ui-express";
 //import router
 import authRouter from "./routes/auth.js";
 import forecastRouter from "./routes/forecast.js";
+import productsRouter from "./routes/products.js";
 
 const app = express();
 const PORT = 8080;
@@ -69,6 +70,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/auth', authRouter);
 app.use('/forecast', forecastRouter);
+app.use('/products', productsRouter);
 
 app.listen(PORT, () => {
     console.log(`Server started on port: http://localhost:${PORT}`);
