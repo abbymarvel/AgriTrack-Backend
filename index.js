@@ -37,7 +37,7 @@ const swaggerOptions = {
             bearerAuth: []
         }
     },
-    apis: ['routes/auth.js', 'routes/forecast.js'],
+    apis: ['routes/auth.js', 'routes/forecast.js', 'routes/products.js'],
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
