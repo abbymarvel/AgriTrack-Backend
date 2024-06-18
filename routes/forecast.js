@@ -46,7 +46,7 @@ route.get('/get-allTypes', authenticateToken, async (req, res) => {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
         const [rows] = await connection.query(commodityTypeQuery);
 
-        const commodityList = rows.map(item => item.commodityType);
+        const commodityList = rows.map(item => ({type: item.commodityType}));
         res.send(commodityList);
     } catch (error) {
         console.error(error.message);
