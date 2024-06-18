@@ -101,15 +101,11 @@ const upload = multer({ storage: storage });
 // GET method to retrieve all products
 router.get('/', async (req, res) => {
     try {
-        const allProductQuery = 'SELECT * FROM `agritrack`.`products`';
+        const allProductQuery = 'SELECT * FROM products';
         const [rows] = await connection.execute(allProductQuery);
 
-        // Check if rows array is not empty and return the first element
-        if (rows.length > 0) {
-            res.status(200).json(rows[0]);
-        } else {
-            res.status(404).json({ message: 'No products found' });
-        }
+        // Return all rows
+        res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Internal Server Error' });
