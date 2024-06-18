@@ -27,14 +27,18 @@ const connection = await mysql.createConnection({
  *       - bearerAuth: authorization
  *     responses:
  *       200:
- *         description: Used logged out successfully
+ *         description: Successfully retrieved commodity types
  *         content:
  *           application/json:
  *             schema:
  *               type: array
- *               item:
- *                   type: string
- *                   description: Commodity type
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   type:
+ *                     type: string
+ *                     description: Commodity type
+ *                     example: Wheat
  *       404:
  *         description: Unauthorized access (requires authentication)
  *       501:
