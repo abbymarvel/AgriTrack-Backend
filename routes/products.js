@@ -104,8 +104,8 @@ router.get('/', async (req, res) => {
         const allProductQuery = 'SELECT * FROM products';
         const [rows] = await connection.execute(allProductQuery);
 
-        // Return all rows
-        res.status(200).json(rows);
+        // Return all rows wrapped in an object
+        res.status(200).json({ products: rows });
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Internal Server Error' });
