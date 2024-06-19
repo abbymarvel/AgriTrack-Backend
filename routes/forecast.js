@@ -16,44 +16,45 @@ const connection = await mysql.createConnection({
 
 /**
  * @swagger
- * tags:
- *   name: Price Forecasting
- *   description: Price Forcasting API
  * /forecast/get-allTypes:
  *   get:
- *     summary: Get all commodity types
+ *     summary: Retrieve all commodity types
  *     tags: [Price Forecasting]
  *     security:
  *       - bearerAuth: authorization
  *     responses:
  *       200:
- *         description: Successfully retrieved commodity types
+ *         description: Unauthorized access (requires authentication)
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   type:
- *                     type: string
- *                     description: Commodity type
- *                     example: Wheat
- *       404:
- *         description: Unauthorized access (requires authentication)
- *       501:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Unauthorized access
+ *       500:
  *         description: Internal Server Error
- *              
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
+
 route.get('/get-allTypes', authenticateToken, async (req, res) => {
     try {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
         const [rows] = await connection.query(commodityTypeQuery);
 
-        const commodityList = rows.map(item => ({type: item.commodityType}));
-        res.send(commodityList);
     } catch (error) {
         console.error(error.message);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 

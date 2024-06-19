@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import mysql from 'mysql2/promise';
+import jwt from "jsonwebtoken";
 import multer from 'multer';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -43,6 +44,9 @@ const upload = multer({ storage: storage });
  *         nutrition_facts:
  *           type: string
  *           description: The nutrition facts of the product
+ *         user_id:
+ *           type: string
+ *           description: user's email is considered user_id  
  *         image:
  *           type: string
  *           format: binary
@@ -58,13 +62,15 @@ const upload = multer({ storage: storage });
 
 /**
  * @swagger
- * /products:
+ * /get-user-products:
  *   get:
- *     summary: Retrieve a list of all products
+ *     summary: Retrieve all products owned by the authenticated user
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: A list of products
+ *         description: A list of products owned by the user
  *         content:
  *           application/json:
  *             schema:
@@ -74,32 +80,70 @@ const upload = multer({ storage: storage });
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Product'
- *       '404':
- *         description: No products found
+ *       '500':
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 message:
  *                   type: string
  *                   description: Error message
- *                   example: No products found.
- *       '500':
- *         description: Internal Server Error
+ *                   example: Internal Server Error
+ */
+
+// GET method to retrieve all products owned by Business Owner
+router.get('/get-user-products', async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization']
+        const token = authHeader && authHeader.split(' ')[1];
+        const verify = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const email = verify.email;
+        const allProductQuery = 'SELECT * FROM products WHERE user_id = ?';
+        const [rows] = await connection.execute(allProductQuery, [email]);
+
+        // Return all rows wrapped in an object
+        res.status(200).json({ products: rows });
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+/**
+ * @swagger
+ * /get-all-products:
+ *   get:
+ *     summary: Retrieve all products
+ *     tags: [Products]
+ *     responses:
+ *       '200':
+ *         description: A list of all products
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
  *                   type: string
  *                   description: Error message
  *                   example: Internal Server Error
  */
 
 // GET method to retrieve all products
-router.get('/', async (req, res) => {
+router.get('/get-all-products', async (req, res) => {
     try {
         const allProductQuery = 'SELECT * FROM products';
         const [rows] = await connection.execute(allProductQuery);
@@ -114,7 +158,7 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
- * /products/product/{productId}:
+ * /product/{productId}:
  *   get:
  *     summary: Retrieve a single product by ID
  *     tags: [Products]
@@ -124,23 +168,43 @@ router.get('/', async (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the product to retrieve
+ *         description: The product ID
  *     responses:
- *       200:
- *         description: The product description by ID
+ *       '200':
+ *         description: A single product
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
- *       404:
+ *       '404':
  *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Product not found
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
 
 // GET method to retrieve a single product by ID
 router.get('/product/:productId', async (req, res) => {
     try {
         const productId = req.params.productId;
-        const query = 'SELECT * FROM products WHERE product_id = ?;';
+        const query = 'SELECT * FROM products WHERE product_id = ?';
         const [rows] = await connection.execute(query, [productId]);
         if (rows.length > 0) {
             res.status(200).json(rows[0]);
@@ -155,28 +219,46 @@ router.get('/product/:productId', async (req, res) => {
 
 /**
  * @swagger
- * /products/get-products-categories:
+ * /get-products-categories:
  *   get:
  *     summary: Retrieve all product categories
  *     tags: [Products]
  *     responses:
- *       200:
+ *       '200':
  *         description: A list of product categories
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: string
+ *               type: object
+ *               properties:
+ *                 productCategory:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       category_name:
+ *                         type: string
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
 
+// GET method to retrieve product categories by ID
 router.get('/get-products-categories', async (req, res) => {
   try {
     const query = 'SELECT category_name FROM product_categories';
     const [rows] = await connection.execute(query);
 
     // Return all rows
-    res.status(200).json(rows);
+    res.status(200).json({ productCategory: rows });
   } catch (error) {
     console.error('Error fetching category:', error);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -185,14 +267,16 @@ router.get('/get-products-categories', async (req, res) => {
 
 /**
  * @swagger
- * /products/post-products:
+ * /post-products:
  *   post:
  *     summary: Add a new product
  *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -208,22 +292,44 @@ router.get('/get-products-categories', async (req, res) => {
  *                 type: string
  *               nutritionFacts:
  *                 type: string
- *               image:
- *                 type: string
- *                 format: binary
  *     responses:
- *       201:
+ *       '201':
  *         description: Product added successfully
- *       500:
- *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Success message
+ *                   example: Product added successfully
+ *                 productId:
+ *                   type: string
+ *                   description: ID of the newly created product
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
 
-router.post('/post-products', upload.single('image'), async (req, res) => {
+// POST method to post product informations
+router.post('/post-products', async (req, res) => {
   try {
-    const { productId, productName, productOrigin, productCategory, productComposition, nutritionFacts, } = req.body;
-    const imageBuffer = req.file.buffer;
-    const insertQuery = 'INSERT INTO products (product_id, product_name, product_origin, product_category, product_composition, nutrition_facts, image) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    const [result] = await connection.execute(insertQuery, [productId, productName, productOrigin, productCategory, productComposition, nutritionFacts, imageBuffer]);
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1];
+    const verify = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const email = verify.email;
+    const { productId, productName, productOrigin, productCategory, productComposition, nutritionFacts } = req.body;
+    const insertQuery = 'INSERT INTO products (product_id, product_name, product_origin, product_category, product_composition, nutrition_facts, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const [result] = await connection.execute(insertQuery, [productId, productName, productOrigin, productCategory, productComposition, nutritionFacts, email]);
 
     res.status(201).json({ message: 'Product added successfully', productId: result.insertId });
   } catch(error){
@@ -236,9 +342,9 @@ router.post('/post-products', upload.single('image'), async (req, res) => {
 
 /**
  * @swagger
- * /products/edit-product/{productId}:
+ * /edit-product/{productId}:
  *   put:
- *     summary: Update a product by ID
+ *     summary: Edit a product by ID
  *     tags: [Products]
  *     parameters:
  *       - in: path
@@ -246,7 +352,7 @@ router.post('/post-products', upload.single('image'), async (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the product to update
+ *         description: The product ID
  *     requestBody:
  *       required: true
  *       content:
@@ -265,14 +371,42 @@ router.post('/post-products', upload.single('image'), async (req, res) => {
  *               nutritionFacts:
  *                 type: string
  *     responses:
- *       200:
+ *       '200':
  *         description: Product updated successfully
- *       404:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Success message
+ *                   example: Product updated successfully
+ *       '404':
  *         description: Product not found
- *       500:
- *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Product not found
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
 
+// PUT method to edit product informations
 router.put('/edit-product/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
