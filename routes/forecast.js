@@ -16,40 +16,62 @@ const connection = await mysql.createConnection({
 
 /**
  * @swagger
- * tags:
- *   name: Price Forecasting
- *   description: Price Forcasting API
  * /forecast/get-allTypes:
  *   get:
- *     summary: Get all commodity types
+ *     summary: Retrieve all commodity types
  *     tags: [Price Forecasting]
  *     security:
  *       - bearerAuth: authorization
  *     responses:
  *       200:
- *         description: Used logged out successfully
+ *         description: A list of commodity types
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               item:
- *                   type: string
- *                   description: Commodity type
- *       404:
+ *               type: object
+ *               properties:
+ *                 commodities:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       commodityType:
+ *                         type: string
+ *                         description: The type of commodity
+ *                         example: Wheat
+ *       401:
  *         description: Unauthorized access (requires authentication)
- *       501:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Unauthorized access
+ *       500:
  *         description: Internal Server Error
- *              
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Internal Server Error
  */
+
 route.get('/get-allTypes', authenticateToken, async (req, res) => {
     try {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
         const [rows] = await connection.query(commodityTypeQuery);
 
-        const commodityList = rows.map(item => item.commodityType);
-        res.send(commodityList);
+        res.status(200).json({ commodities: rows });
     } catch (error) {
         console.error(error.message);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
