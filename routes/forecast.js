@@ -122,7 +122,7 @@ route.post('/predict', authenticateToken, async (req, res) => {
 
         const response = await api.get(apiURL);
 
-        res.status(200).json({ predictionData });
+        res.status(200).json({ response });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ error: "Internal Server Error" });
