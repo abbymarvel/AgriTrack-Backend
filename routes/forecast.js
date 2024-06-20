@@ -57,8 +57,7 @@ route.get('/get-allTypes', authenticateToken, async (req, res) => {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
         const [rows] = await connection.execute(commodityTypeQuery);
 
-        const commodityList = rows.map(item => ({type: item.commodityType}));
-        res.send(commodityList);
+        res.status(200).json({ productCategory: rows });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Internal Server Error' });
