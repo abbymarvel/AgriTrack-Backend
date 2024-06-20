@@ -121,8 +121,9 @@ route.post('/predict', authenticateToken, async (req, res) => {
         const apiURL = `https://model-api-tngtr2ferq-et.a.run.app/predictions/predict/${apiParam}`;
 
         const response = await api.get(apiURL);
+        const predictionData = response.data.predictions;
 
-        res.status(200).json({ response });
+        res.status(200).json({ predictionData });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ error: "Internal Server Error" });
