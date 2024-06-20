@@ -24,6 +24,22 @@ const connection = await mysql.createConnection({
  *       - bearerAuth: authorization
  *     responses:
  *       200:
+ *         description: A list of commodity types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 commodities:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       commodityType:
+ *                         type: string
+ *                         description: The type of commodity
+ *                         example: Wheat
+ *       401:
  *         description: Unauthorized access (requires authentication)
  *         content:
  *           application/json:
@@ -52,6 +68,7 @@ route.get('/get-allTypes', authenticateToken, async (req, res) => {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
         const [rows] = await connection.query(commodityTypeQuery);
 
+        res.status(200).json({ commodities: rows });
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Internal Server Error' });
