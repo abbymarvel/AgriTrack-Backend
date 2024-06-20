@@ -3,6 +3,7 @@ import mysql from 'mysql2/promise';
 import jwt from "jsonwebtoken";
 import multer from 'multer';
 import dotenv from 'dotenv';
+import { Storage } from '@google-cloud/storage';
 dotenv.config();
 const router = express.Router();
 // Database connection setup
@@ -15,6 +16,14 @@ const connection = mysql.createPool({
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+const gc = new Storage({
+    keyFilename: process.env.GCS_KEYFILE_PATH,
+    projectId: process.env.GCS_PROJECT_ID,
+  });
+
+const bucket = gc.bucket(process.env.GCS_BUCKET_NAME);
+
 
 /**
  * @swagger
@@ -47,10 +56,9 @@ const upload = multer({ storage: storage });
  *         user_id:
  *           type: string
  *           description: user's email is considered user_id  
- *         image:
+ *         image_url:
  *           type: string
- *           format: binary
- *           description: The image of the product
+ *           description: The image url of the product stored in a bucket
  */
 
 /**
@@ -292,6 +300,10 @@ router.get('/get-products-categories', async (req, res) => {
  *                 type: string
  *               nutritionFacts:
  *                 type: string
+ *               email:
+ *                 type: string
+ *               imageUrl:
+ *                 type: string
  *     responses:
  *       '201':
  *         description: Product added successfully
@@ -328,8 +340,32 @@ router.post('/post-products', async (req, res) => {
     const verify = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const email = verify.email;
     const { productId, productName, productOrigin, productCategory, productComposition, nutritionFacts } = req.body;
-    const insertQuery = 'INSERT INTO products (product_id, product_name, product_origin, product_category, product_composition, nutrition_facts, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    const [result] = await connection.execute(insertQuery, [productId, productName, productOrigin, productCategory, productComposition, nutritionFacts, email]);
+
+    let imageUrl = '';
+
+    if (req.file) {
+        const blob = bucket.file(`${Date.now()}_${req.file.originalname}`);
+        const blobStream = blob.createWriteStream({
+          resumable: false,
+          contentType: req.file.mimetype,
+          predefinedAcl: 'publicRead', // Make the file publicly accessible
+        });
+  
+        blobStream.on('error', (err) => {
+          console.error('Error uploading image:', err);
+          return res.status(500).json({ message: 'Error uploading image' });
+        });
+  
+        blobStream.on('finish', () => {
+          imageUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+          console.log('Image URL:', imageUrl);
+        });
+  
+        blobStream.end(req.file.buffer);
+      }
+
+    const insertQuery = 'INSERT INTO products (product_id, product_name, product_origin, product_category, product_composition, nutrition_facts, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    const [result] = await connection.execute(insertQuery, [productId, productName, productOrigin, productCategory, productComposition, nutritionFacts, email, imageUrl]);
 
     res.status(201).json({ message: 'Product added successfully', productId: result.insertId });
   } catch(error){
