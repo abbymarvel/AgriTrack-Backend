@@ -300,8 +300,6 @@ router.get('/get-products-categories', async (req, res) => {
  *                 type: string
  *               nutritionFacts:
  *                 type: string
- *               email:
- *                 type: string
  *               imageUrl:
  *                 type: string
  *     responses:
