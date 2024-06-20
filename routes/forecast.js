@@ -8,7 +8,7 @@ dotenv.config();
 const route = express.Router();
 const secretKey = process.env.JWT_SECRET_KEY;
 
-const connection = await mysql.createConnection({
+const connection = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -55,8 +55,10 @@ const api = axios.create({
 route.get('/get-allTypes', authenticateToken, async (req, res) => {
     try {
         const commodityTypeQuery = 'SELECT commodityType FROM `agritrack`.`commodity`';
-        const [rows] = await connection.query(commodityTypeQuery);
+        const [rows] = await connection.execute(commodityTypeQuery);
 
+        const commodityList = rows.map(item => ({type: item.commodityType}));
+        res.send(commodityList);
     } catch (error) {
         console.error(error.message);
         res.status(500).json({ message: 'Internal Server Error' });
